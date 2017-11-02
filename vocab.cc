@@ -6,7 +6,6 @@
 
 using namespace std;
 
-namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 namespace pt = boost::property_tree;
 using Tokenizer = boost::tokenizer<boost::char_separator<char>>;
@@ -15,41 +14,50 @@ Vocab::Vocab(const string & corpus_path, const unsigned size) {
   map<string, unsigned> frequency;
   num_lines = 0;
   num_words = 0;
-  ifstream ifs(corpus_path);
-  string line;
-  getline(ifs, line);  // for header
-  while (getline(ifs, line)) {
-    boost::char_separator<char> sep(" ", "'[]()<>{}:,-!.‹›«»‐-‘’“”;/⁄");
-    Tokenizer tok(sentence, sep);
-    for (auto & word: tok) {
-      ++frequency[word];
+
+  const fs::path path(corpus_path);
+  using recur_it = fs::recursive_directory_iterator;
+  BOOST_FOREACH(const auto & p, make_pair(recur_it(path), recur_it())) {
+    if (fs::is_directory(p)) {
+      cout << p << endl;
+    } else {
+      ifstream ifs(p.string());
+      string line;
+      getline(ifs, line);  // for header
+      while (getline(ifs, line)) {
+        boost::char_separator<char> sep(" ", "'[]()<>{}:,-!.‹›«»‐-‘’“”;/⁄");
+        Tokenizer tok(sentence, sep);
+        for (auto & word: tok) {
+          ++frequency[word];
+        }
+        ++num_lines;
+        num_words += distance(tok.begin(), tok,end());
+      }
     }
-    ++num_lines;
-    num_words += distance(tok.begin(), tok,end());
-  }
 
-  sort(frequency.begin(), frequency.end(),
-       [](const auto & lhs, const auto & rhs) {
-         return lhs.second >= rhs.second;
-       });
+    sort(frequency.begin(), frequency.end(),
+         [](const auto & lhs, const auto & rhs) {
+           return lhs.second >= rhs.second;
+         });
 
-  frequencies_.emplace_back(num_words);
-  frequencies_.emplace_back(num_lines);
-  frequencies_.emplace_back(num_lines);
-  num_to_words_.emplace_back("<UNK>"):
-  num_to_words_.emplace_back("<s>");
-  num_to_words_.emplace_back("</s>"):
-  word_to_nums_["<UNK>"] = 0;
-  word_to_nums_["<s>"] = 1;
-  word_to_nums_["</s>"] = 2;
-  auto num_kind_of_words = 3;
-  for (auto & p: frequency) {
-    frequencies_.emplace_back(p.second);
-    frequencies_[0] -= p.second;
-    num_to_words_.emplace_back(p.first);
-    word_to_nums_[p.second] = p.first;
-    if (frequencies_.size() >= size + 3) {
-      break;
+    frequencies_.emplace_back(num_words);
+    frequencies_.emplace_back(num_lines);
+    frequencies_.emplace_back(num_lines);
+    num_to_words_.emplace_back("<UNK>"):
+    num_to_words_.emplace_back("<s>");
+    num_to_words_.emplace_back("</s>"):
+    word_to_nums_["<UNK>"] = 0;
+    word_to_nums_["<s>"] = 1;
+    word_to_nums_["</s>"] = 2;
+    auto num_kind_of_words = 3;
+    for (auto & p: frequency) {
+      frequencies_.emplace_back(p.second);
+      frequencies_[0] -= p.second;
+      num_to_words_.emplace_back(p.first);
+      word_to_nums_[p.second] = p.first;
+      if (frequencies_.size() >= size + 3) {
+        break;
+      }
     }
   }
 }
