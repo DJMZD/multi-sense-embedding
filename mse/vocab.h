@@ -2,22 +2,24 @@
 #define VOCAB_H_
 
 #include <vector>
-#include <unordered_map>
+#include <map>
 
 class Vocab {
 public:
   Vocab(const std::string & corpus_path, const unsigned size);
-  ~Vocab();
+  ~Vocab() {};
 
-  unsigned Vocab::frequency(const unsigned id);
-  string Vocab::word(const unsigned id);
-  unsigned Vocab::id(const string & word);
-  vector<string> Vocab::ConvertToWords(const vector<unsigned> ids);
-  vector<unsigned> Vocab::ConvertToIds(const string & words);
+  unsigned frequency(const unsigned id);
+  std::string word(const unsigned id);
+  unsigned id(const std::string & word);
+  unsigned size() { return size_; }
+  std::vector<std::string> ConvertToWords(const std::vector<unsigned> ids);
+  std::vector<unsigned> ConvertToIds(const std::vector<std::string> & words);
 private:
   std::vector<unsigned> frequencies_;
   std::vector<std::string> num_to_words_;
-  std::unordered_map<std::string, unsigned> word_to_nums_;
+  std::map<std::string, unsigned> word_to_nums_;
+  unsigned size_;
 };
 
 #endif
