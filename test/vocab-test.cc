@@ -38,6 +38,7 @@ BOOST_AUTO_TEST_CASE(constructor_and_setter_test) {
   BOOST_CHECK_EQUAL(270, vocab.frequency(8));
   BOOST_CHECK_EQUAL(260, vocab.frequency(9));
   BOOST_CHECK_EQUAL(2003, vocab.size());
+  BOOST_CHECK_EQUAL(10139, vocab.num_words());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

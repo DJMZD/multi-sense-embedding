@@ -49,6 +49,7 @@ Vocab::Vocab(const string & corpus_path, const unsigned size) {
       }
     }
   }
+  num_words_ = num_words;
 
   vector<pair<unsigned, string>> frequencies;
   for (const auto & e: frequency) {
