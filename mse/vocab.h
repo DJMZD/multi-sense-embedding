@@ -4,19 +4,15 @@
 #include <vector>
 #include <map>
 
-/**
- * \brief Make a vocab instance from a corpus of rawtext
- * \details Word(s) can be converted to id(s) according the rank of frequency
- * and vice versa.
- */
+// \brief Make a vocab instance from a corpus of rawtext
+// \details Word(s) can be converted to id(s) according the rank of frequency
+// and vice versa.
 class Vocab {
 public:
-  /**
-   * \brief Make a vocab instance from a corpus of rawtext
-   *
-   * \param corpus_path The root path of the corpus
-   * \param size The maximum size of words except <UNK>, <s> and </s>
-   */
+  // \brief Make a vocab instance from a corpus of rawtext
+  //
+  // \param corpus_path The root path of the corpus
+  // \param size The maximum size of words except <UNK>, <s> and </s>
   Vocab(const std::string & corpus_path, const unsigned size);
   ~Vocab() {};
 
