@@ -29,9 +29,9 @@ Vocab::Vocab(const string & corpus_path, const unsigned size) {
     } else {
       ifstream ifs(pa.path().string());
       string line;
-      getline(ifs, line);  // for header
       while (getline(ifs, line)) {
-        if (line.empty()) { continue; }
+        // for empty line, header and footer
+        if (line.empty() || line.find("<doc") == 0 || line.find("</doc") == 0) { continue; }
         ari::replace_all(line, "‘", "'");
         ari::replace_all(line, "’", "'");
         ari::replace_all(line, "“", "\"");

@@ -27,9 +27,9 @@ BOOST_AUTO_TEST_CASE(constructor_and_setter_test) {
   BOOST_CHECK_EQUAL("and", vocab.word(7));
   BOOST_CHECK_EQUAL("\"", vocab.word(8));
   BOOST_CHECK_EQUAL("in", vocab.word(9));
-  BOOST_CHECK_EQUAL(323, vocab.frequency(0));
-  BOOST_CHECK_EQUAL(110, vocab.frequency(1));
-  BOOST_CHECK_EQUAL(110, vocab.frequency(2));
+  BOOST_CHECK_EQUAL(322, vocab.frequency(0));
+  BOOST_CHECK_EQUAL(109, vocab.frequency(1));
+  BOOST_CHECK_EQUAL(109, vocab.frequency(2));
   BOOST_CHECK_EQUAL(654, vocab.frequency(3));
   BOOST_CHECK_EQUAL(489, vocab.frequency(4));
   BOOST_CHECK_EQUAL(411, vocab.frequency(5));
@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(constructor_and_setter_test) {
   BOOST_CHECK_EQUAL(270, vocab.frequency(8));
   BOOST_CHECK_EQUAL(260, vocab.frequency(9));
   BOOST_CHECK_EQUAL(2003, vocab.size());
-  BOOST_CHECK_EQUAL(10139, vocab.num_words());
+  BOOST_CHECK_EQUAL(10135, vocab.num_words());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
