@@ -9,14 +9,17 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include "rawtext-splitter.h"
+
 using namespace std;
 
 namespace ari = boost::algorithm;
 namespace fs = boost::filesystem;
 namespace pt = boost::property_tree;
-using Tokenizer = boost::tokenizer<boost::char_separator<char>>;
 
-Vocab::Vocab(const string & corpus_path, const unsigned size) {
+Vocab::Vocab(const string & corpus_path, const unsigned size,
+         shared_ptr<RawtextSplitter> text_splitter)
+: text_splitter_(text_splitter) {
   map<string, unsigned> frequency;
   unsigned num_lines = 0;
   unsigned num_words = 0;
@@ -30,17 +33,10 @@ Vocab::Vocab(const string & corpus_path, const unsigned size) {
       ifstream ifs(pa.path().string());
       string line;
       while (getline(ifs, line)) {
-        // for empty line, header and footer
-        if (line.empty() || line.find("<doc") == 0 || line.find("</doc") == 0) { continue; }
-        ari::replace_all(line, "‘", "'");
-        ari::replace_all(line, "’", "'");
-        ari::replace_all(line, "“", "\"");
-        ari::replace_all(line, "”", "\"");
-        ari::replace_all(line, "'s", " xqyzs");
-        string punctuation = "/⁄\\()\"':,.;<>~!@#$%^&*|+=[]{}`?-…-‹›«»‐-‘’“”";
-        boost::char_separator<char> sep(" ", punctuation.c_str());
-        ari::replace_all(line, "xqyzs", "'s");
-        Tokenizer tok(line, sep);
+        if (line.empty() || line.find("<doc") == 0 || line.find("</doc") == 0) {
+          continue;
+        }
+        auto tok = text_splitter_->Split(line);
         for (auto & word: tok) {
           ++frequency[ari::to_lower_copy(word)];
         }

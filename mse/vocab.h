@@ -1,8 +1,11 @@
 #ifndef VOCAB_H_
 #define VOCAB_H_
 
+#include <memory>
 #include <vector>
 #include <map>
+
+class RawtextSplitter;
 
 // \brief Make a vocab instance from a corpus of rawtext
 // \details Word(s) can be converted to id(s) according the rank of frequency
@@ -13,7 +16,8 @@ public:
   //
   // \param corpus_path The root path of the corpus
   // \param size The maximum size of words except <UNK>, <s> and </s>
-  Vocab(const std::string & corpus_path, const unsigned size);
+  Vocab(const std::string & corpus_path, const unsigned size,
+    std::shared_ptr<RawtextSplitter> text_splitter);
   ~Vocab() {};
 
   unsigned frequency(const unsigned id);
@@ -29,6 +33,7 @@ private:
   std::map<std::string, unsigned> word_to_nums_;
   unsigned size_;
   unsigned long num_words_;
+  std::shared_ptr<RawtextSplitter> text_splitter_;
 };
 
 #endif
