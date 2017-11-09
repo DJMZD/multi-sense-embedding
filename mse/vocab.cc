@@ -26,30 +26,31 @@ Vocab::Vocab(const string & corpus_path, const unsigned size,
 
   const fs::path path(corpus_path);
   using recur_it = fs::recursive_directory_iterator;
-  for (const auto & pa: boost::make_iterator_range(recur_it(path), {})) {
-    if (fs::is_directory(pa)) {
-      cout << pa << endl;
+  for (const auto & p: boost::make_iterator_range(recur_it(path), {})) {
+    if (fs::is_directory(p)) {
+      cout << p << endl;
     } else {
-      ifstream ifs(pa.path().string());
+      ifstream ifs(p.path().string());
       string line;
       while (getline(ifs, line)) {
+        // for empty line, header and footer
         if (line.empty() || line.find("<doc") == 0 || line.find("</doc") == 0) {
           continue;
         }
-        auto tok = text_splitter_->Split(line);
-        for (auto & word: tok) {
-          ++frequency[ari::to_lower_copy(word)];
+        auto tokens = text_splitter_->Split(line);
+        for (const auto & t: tokens) {
+          ++frequency[ari::to_lower_copy(t)];
         }
         ++num_lines;
-        num_words += distance(tok.begin(), tok.end());
+        num_words += tokens.size();
       }
     }
   }
   num_words_ = num_words;
 
   vector<pair<unsigned, string>> frequencies;
-  for (const auto & e: frequency) {
-    frequencies.emplace_back(e.second, e.first);
+  for (const auto & f: frequency) {
+    frequencies.emplace_back(f.second, f.first);
   }
 
   sort(frequencies.begin(), frequencies.end(), [](const auto & lhs, const auto & rhs) {
@@ -68,14 +69,12 @@ Vocab::Vocab(const string & corpus_path, const unsigned size,
   word_to_nums_["<s>"] = 1;
   word_to_nums_["</s>"] = 2;
   unsigned num_kind_of_words = 3;
-  for (auto & p: frequencies) {
-    frequencies_.emplace_back(p.first);
-    frequencies_[0] -= p.first;
-    num_to_words_.emplace_back(p.second);
-    word_to_nums_[p.second] = num_kind_of_words++;
-    if (frequencies_.size() >= size + 3) {
-      break;
-    }
+  for (const auto & f: frequencies) {
+    frequencies_.emplace_back(f.first);
+    frequencies_[0] -= f.first;
+    num_to_words_.emplace_back(f.second);
+    word_to_nums_[f.second] = num_kind_of_words++;
+    if (frequencies_.size() >= size + 3) { break; }
   }
   size_ = frequencies_.size();
 }
@@ -113,7 +112,7 @@ unsigned Vocab::id(const string & word) {
 
 vector<string> Vocab::ConvertToWords(const vector<unsigned> ids) {
   vector<string> words;
-  for (auto & id: ids) {
+  for (const auto & id: ids) {
     words.emplace_back(word(id));
   }
   return words;
@@ -121,7 +120,7 @@ vector<string> Vocab::ConvertToWords(const vector<unsigned> ids) {
 
 vector<unsigned> Vocab::ConvertToIds(const vector<string> & words) {
   vector<unsigned> ids;
-  for (auto & word: words) {
+  for (const auto & word: words) {
     ids.emplace_back(id(word));
   }
   return ids;
