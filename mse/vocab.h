@@ -25,6 +25,7 @@ public:
   unsigned id(const std::string & word);
   unsigned size() { return size_; }
   unsigned long num_words() { return num_words_; }
+  std::shared_ptr<RawtextSplitter> text_splitter() { return text_splitter_; }
   std::vector<std::string> ConvertToWords(const std::vector<unsigned> ids);
   std::vector<unsigned> ConvertToIds(const std::vector<std::string> & words);
 private:
