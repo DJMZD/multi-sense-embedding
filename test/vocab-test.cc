@@ -1,12 +1,20 @@
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
 
+#include <memory>
+#include <string>
+
+#include "../mse/rawtext-splitter.h"
 #include "../mse/vocab.h"
+
+using namespace std;
 
 BOOST_AUTO_TEST_SUITE(vocab_test)
 
 BOOST_AUTO_TEST_CASE(constructor_and_setter_test) {
-  Vocab vocab("data/test", 2000);
+  string punctuation = "/⁄\\()\"':,.;<>~!@#$%^&*|+=[]{}`?-…-‹›«»‐-‘’“”";
+  auto text_splitter = make_shared<RawtextSplitter>(punctuation);
+  Vocab vocab("data/test", 2000, text_splitter);
   BOOST_CHECK_EQUAL(0, vocab.id("<UNK>"));
   BOOST_CHECK_EQUAL(1, vocab.id("<s>"));
   BOOST_CHECK_EQUAL(2, vocab.id("</s>"));
