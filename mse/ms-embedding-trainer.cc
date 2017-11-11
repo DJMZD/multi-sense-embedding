@@ -34,15 +34,15 @@ MSEmbeddingTrainer::MSEmbeddingTrainer(const pt::ptree & config) {
     }
   }
   const auto vocab_size = config.get<unsigned>("Train.vocab_size");
-  const auto embed_size = config.get<unsigned>("Train.embed_size");
+  const auto emb_size = config.get<unsigned>("Train.emb_size");
   const auto scale = config.get<float>("Train.scale");
-  global_embeddings_ = MatrixXf::Random(vocab_size, embed_size) * scale;
+  global_embeddings_ = MatrixXf::Random(vocab_size, emb_size) * scale;
 }
 
 void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
   const auto train_path = config.get<string>("Corpus.train_path");
   const auto vocab_size = config.get<unsigned>("Train.vocab_size");
-  const auto embed_size = config.get<unsigned>("Train.embed_size");
+  const auto emb_size = config.get<unsigned>("Train.emb_size");
   const auto context_size = config.get<unsigned>("Train.context_size");
   const auto max_sense_num = config.get<unsigned>("Train.max_sense_num");
   const auto max_iter_num = config.get<unsigned>("Train.max_iter");
@@ -67,7 +67,7 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
           for (unsigned i = 0; i < ids.size(); ++i) {
             auto now_id = ids[i];
             auto context_emb = GetContextEmbedding(ids, i, context_size,
-                                 embed_size);
+                                 emb_size);
             if (!context_emb.size()) {
               word_senses.push_back(-1);
               continue;
@@ -123,8 +123,8 @@ vector<unsigned> MSEmbeddingTrainer::SplitStringToIds(const Vocab & vocab,
 
 VectorXf MSEmbeddingTrainer::GetContextEmbedding(const vector<unsigned> & ids,
                                const unsigned i, const unsigned context_size,
-                               const unsigned embed_size) {
-  VectorXf context_emb = VectorXf::Zero(embed_size);
+                               const unsigned emb_size) {
+  VectorXf context_emb = VectorXf::Zero(emb_size);
   unsigned l_pos = 0;
   unsigned r_pos = ids.size();
   if (i > context_size / 2) { l_pos = i - context_size / 2; }

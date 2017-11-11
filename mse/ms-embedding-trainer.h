@@ -22,7 +22,7 @@ private:
                           const std::string & line, const float sampling);
   Eigen::VectorXf GetContextEmbedding(const std::vector<unsigned> & ids,
                     const unsigned i, const unsigned context_size,
-                    const unsigned embed_size);
+                    const unsigned emb_size);
   unsigned SampleSense(const unsigned w_id, float gamma,
              const Eigen::VectorXf & context_emb, const unsigned max_sense_num);
   std::vector<float> sigmoid_table_;
