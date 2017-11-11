@@ -5,6 +5,13 @@
 #include <vector>
 #include <map>
 
+#include <boost/shared_ptr.hpp>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/shared_ptr.hpp>
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/string.hpp>
+
 class RawtextSplitter;
 
 // \brief Make a vocab instance from a corpus of rawtext
@@ -17,7 +24,7 @@ public:
   // \param corpus_path The root path of the corpus
   // \param size The maximum size of words except <UNK>, <s> and </s>
   Vocab(const std::string & corpus_path, const unsigned size,
-    std::shared_ptr<RawtextSplitter> text_splitter);
+    boost::shared_ptr<RawtextSplitter> text_splitter);
   ~Vocab() {};
 
   unsigned frequency(const unsigned id) const;
@@ -25,7 +32,7 @@ public:
   unsigned id(const std::string & word) const;
   unsigned size() const { return size_; }
   unsigned long num_words() const { return num_words_; }
-  std::shared_ptr<RawtextSplitter> text_splitter() const { return text_splitter_; }
+  boost::shared_ptr<RawtextSplitter> text_splitter() const { return text_splitter_; }
   std::vector<std::string> ConvertToWords(const std::vector<unsigned> ids) const;
   std::vector<unsigned> ConvertToIds(const std::vector<std::string> & words) const;
 private:
@@ -34,7 +41,18 @@ private:
   std::map<std::string, unsigned> word_to_nums_;
   unsigned size_;
   unsigned long num_words_;
-  std::shared_ptr<RawtextSplitter> text_splitter_;
+  boost::shared_ptr<RawtextSplitter> text_splitter_;
+
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive & ar, const unsigned) {
+    ar & frequencies_;
+    ar & num_to_words_;
+    ar & word_to_nums_;
+    ar & size_;
+    ar & num_words_;
+    ar & text_splitter_;
+  }
 };
 
 #endif
