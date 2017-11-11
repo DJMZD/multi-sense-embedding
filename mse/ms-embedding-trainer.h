@@ -26,7 +26,7 @@ private:
   unsigned SampleSense(const unsigned w_id, float gamma,
              const Eigen::VectorXf & context_emb, const unsigned max_sense_num);
   std::vector<float> sigmoid_table_;
-  Eigen::MatrixXf global_embedding_;
+  Eigen::MatrixXf global_embeddings_;
   std::map<unsigned, std::vector<Eigen::VectorXf>> sense_embeddings_;
   std::map<unsigned, std::vector<unsigned>> sense_counts_;
   // for fast mode

@@ -36,7 +36,7 @@ MSEmbeddingTrainer::MSEmbeddingTrainer(const pt::ptree & config) {
   const auto vocab_size = config.get<unsigned>("Train.vocab_size");
   const auto embed_size = config.get<unsigned>("Train.embed_size");
   const auto scale = config.get<float>("Train.scale");
-  global_embedding_ = MatrixXf::Random(vocab_size, embed_size) * scale;
+  global_embeddings_ = MatrixXf::Random(vocab_size, embed_size) * scale;
 }
 
 void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
@@ -130,7 +130,7 @@ VectorXf MSEmbeddingTrainer::GetContextEmbedding(const vector<unsigned> & ids,
   if (i > context_size / 2) { l_pos = i - context_size / 2; }
   if (i + context_size / 2 < ids.size()) { r_pos = i + context_size / 2; }
   for (unsigned pos = l_pos; pos <= r_pos; ++pos) {
-    context_emb += global_embedding_.row(pos);
+    context_emb += global_embeddings_.row(pos);
   }
   context_emb = context_emb / (r_pos - l_pos + 1);
 
