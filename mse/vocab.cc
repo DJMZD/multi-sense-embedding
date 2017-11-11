@@ -79,7 +79,7 @@ Vocab::Vocab(const string & corpus_path, const unsigned size,
   size_ = frequencies_.size();
 }
 
-unsigned Vocab::frequency(const unsigned id) {
+unsigned Vocab::frequency(const unsigned id) const {
   if (id > frequencies_.size()) {
     ostringstream oss;
     oss << __FILE__ << ": " << __LINE__ << "ERROR: "
@@ -90,7 +90,7 @@ unsigned Vocab::frequency(const unsigned id) {
   }
 }
 
-string Vocab::word(const unsigned id) {
+string Vocab::word(const unsigned id) const {
   if (id > num_to_words_.size()) {
     ostringstream oss;
     oss << __FILE__ << ": " << __LINE__ << "ERROR: "
@@ -101,7 +101,7 @@ string Vocab::word(const unsigned id) {
   }
 }
 
-unsigned Vocab::id(const string & word) {
+unsigned Vocab::id(const string & word) const {
   auto it = word_to_nums_.find(word);
   if (it == word_to_nums_.end()) {
     return 0;  // <UNK>
@@ -110,7 +110,7 @@ unsigned Vocab::id(const string & word) {
   }
 }
 
-vector<string> Vocab::ConvertToWords(const vector<unsigned> ids) {
+vector<string> Vocab::ConvertToWords(const vector<unsigned> ids) const {
   vector<string> words;
   for (const auto & id: ids) {
     words.emplace_back(word(id));
@@ -118,7 +118,7 @@ vector<string> Vocab::ConvertToWords(const vector<unsigned> ids) {
   return words;
 }
 
-vector<unsigned> Vocab::ConvertToIds(const vector<string> & words) {
+vector<unsigned> Vocab::ConvertToIds(const vector<string> & words) const {
   vector<unsigned> ids;
   for (const auto & word: words) {
     ids.emplace_back(id(word));

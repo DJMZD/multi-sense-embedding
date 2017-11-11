@@ -20,14 +20,14 @@ public:
     std::shared_ptr<RawtextSplitter> text_splitter);
   ~Vocab() {};
 
-  unsigned frequency(const unsigned id);
-  std::string word(const unsigned id);
-  unsigned id(const std::string & word);
-  unsigned size() { return size_; }
-  unsigned long num_words() { return num_words_; }
-  std::shared_ptr<RawtextSplitter> text_splitter() { return text_splitter_; }
-  std::vector<std::string> ConvertToWords(const std::vector<unsigned> ids);
-  std::vector<unsigned> ConvertToIds(const std::vector<std::string> & words);
+  unsigned frequency(const unsigned id) const;
+  std::string word(const unsigned id) const;
+  unsigned id(const std::string & word) const;
+  unsigned size() const { return size_; }
+  unsigned long num_words() const { return num_words_; }
+  std::shared_ptr<RawtextSplitter> text_splitter() const { return text_splitter_; }
+  std::vector<std::string> ConvertToWords(const std::vector<unsigned> ids) const;
+  std::vector<unsigned> ConvertToIds(const std::vector<std::string> & words) const;
 private:
   std::vector<unsigned> frequencies_;
   std::vector<std::string> num_to_words_;
