@@ -150,8 +150,14 @@ int MSEmbeddingTrainer::SampleSense(const int w_id, float gamma,
     const auto & now_cn = now_cns[i];
     float sim = context_emb.dot(now_emb);
     // TODO: normal mode
-    auto table_index = int((sim + table_max_) * table_size_ / (2 * table_max_));
-    probablities[i] = now_cn * sigmoid_table_[table_index];
+    if (sim > float(table_max_)) {
+      probablities[i] = 1;
+    } else if (sim < -float(table_max_)) {
+      probablities[i] = 0;
+    } else {
+      auto table_index = int((sim + table_max_) * table_size_ / (2 * table_max_));
+      probablities[i] = now_cn * sigmoid_table_[table_index];
+    }
     if (i) { probablities[i] += probablities[i - i]; }
   }
   if (now_cns.size() < max_sense_num) {
