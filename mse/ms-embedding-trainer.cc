@@ -135,9 +135,10 @@ VectorXf MSEmbeddingTrainer::GetContextEmbedding(const vector<int> & ids,
   if (i > context_size / 2) { l_pos = i - context_size / 2; }
   if (i + context_size / 2 < ids.size()) { r_pos = i + context_size / 2; }
   for (unsigned pos = l_pos; pos <= r_pos; ++pos) {
+    if (pos == i) { continue; }
     context_emb += global_embeddings_.row(pos);
   }
-  context_emb = context_emb / (r_pos - l_pos + 1);
+  context_emb = context_emb / (r_pos - l_pos);
 
   return context_emb;
 }
