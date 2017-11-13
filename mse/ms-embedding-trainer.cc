@@ -105,8 +105,8 @@ vector<int> MSEmbeddingTrainer::SplitStringToIds(const Vocab & vocab,
     auto w_count = vocab.frequency(w_id);
     // subsampling
     if (sampling) {
-      auto prob = sqrt(sampling * w_count / vocab.num_words())
-                  + sampling * w_count / vocab.num_words();
+      auto prob = sqrt(sampling * vocab.num_words() / w_count)
+                  + sampling * vocab.num_words() / w_count;
       random_device seed_gen;
       mt19937 engine(seed_gen());
       uniform_real_distribution<float> dist(0, 1.0);
