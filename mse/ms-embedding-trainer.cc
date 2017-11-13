@@ -63,7 +63,8 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
         string line;
         while (getline(ifs, line)) {
           auto ids = SplitStringToIds(vocab, line, sampling);
-          if (ids.empty()) { continue; }
+          // Check whether all of the words are filtered
+          if (count(ids.begin(), ids.end(), -1) == ids.size()) { continue; }
           for (unsigned i = 0; i < ids.size(); ++i) {
             random_device seed_gen;
             mt19937 engine(seed_gen());
@@ -71,9 +72,10 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
             auto context_size = 2 * dist(engine) + 1;
 
             auto now_id = ids[i];
+            bool is_empty = false;
             auto context_emb = GetContextEmbedding(ids, i, context_size,
-                                 emb_size);
-            if (!context_emb.size()) {
+                                 emb_size, is_empty);
+            if (is_empty) {
               word_senses.push_back(-1);
               continue;
             }
@@ -128,17 +130,32 @@ vector<int> MSEmbeddingTrainer::SplitStringToIds(const Vocab & vocab,
 
 VectorXf MSEmbeddingTrainer::GetContextEmbedding(const vector<int> & ids,
                                const unsigned i, const unsigned context_size,
-                               const unsigned emb_size) {
+                               const unsigned emb_size, bool & is_empty) {
   VectorXf context_emb = VectorXf::Zero(emb_size);
   unsigned l_pos = 0;
   unsigned r_pos = ids.size();
-  if (i > context_size / 2) { l_pos = i - context_size / 2; }
-  if (i + context_size / 2 < ids.size()) { r_pos = i + context_size / 2; }
-  for (unsigned pos = l_pos; pos <= r_pos; ++pos) {
-    if (pos == i) { continue; }
-    context_emb += global_embeddings_.row(pos);
+
+  unsigned l_word_count = 0;
+  for (int pos = i - 1; pos >= 0; --pos) {
+    if (ids[pos] != -1) {
+      context_emb += global_embeddings_.row(ids[pos]);
+      ++l_word_count;
+    }
+    if (l_word_count >= context_size / 2) { break; }
   }
-  context_emb = context_emb / (r_pos - l_pos);
+  unsigned r_word_count = 0;
+  for (unsigned pos = i + 1; pos < ids.size(); ++pos) {
+    if (ids[pos] != -1) {
+      context_emb += global_embeddings_.row(ids[pos]);
+      ++r_word_count;
+    }
+    if (r_word_count >= context_size / 2) { break; }
+  }
+  if (l_word_count + r_word_count == 0) {
+    is_empty = true;
+    return context_emb;
+  }
+  context_emb = context_emb / (l_word_count + r_word_count);
 
   return context_emb;
 }
