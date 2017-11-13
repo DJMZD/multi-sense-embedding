@@ -14,8 +14,9 @@ class RawtextSplitter;
 class MSEmbeddingTrainer {
 public:
   // TODO: more constructors
+  MSEmbeddingTrainer() {}
   MSEmbeddingTrainer(const boost::property_tree::ptree & config);
-  ~MSEmbeddingTrainer() {};
+  ~MSEmbeddingTrainer() {}
   void Train(const Vocab & vocab, const boost::property_tree::ptree & config);
 private:
   std::vector<int> SplitStringToIds(const Vocab & vocab,
