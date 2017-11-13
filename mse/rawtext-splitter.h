@@ -11,6 +11,7 @@
 
 class RawtextSplitter {
 public:
+  RawtextSplitter() {}
   RawtextSplitter(const std::string & punctuation): punctuation_(punctuation) {}
   std::vector<std::string> Split(const std::string & text);
 private:

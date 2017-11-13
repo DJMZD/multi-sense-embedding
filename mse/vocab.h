@@ -23,6 +23,7 @@ public:
   //
   // \param corpus_path The root path of the corpus
   // \param size The maximum size of words except <UNK>, <s> and </s>
+  Vocab() {};
   Vocab(const std::string & corpus_path, const unsigned size,
     boost::shared_ptr<RawtextSplitter> text_splitter);
   ~Vocab() {};
