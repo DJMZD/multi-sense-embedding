@@ -1,5 +1,5 @@
-#ifndef RAWTEXT_SPLITTER_H
-#define RAWTEXT_SPLITTER_H
+#ifndef RAWTEXT_SPLITTER_H_
+#define RAWTEXT_SPLITTER_H_
 
 #include <vector>
 #include <string>
