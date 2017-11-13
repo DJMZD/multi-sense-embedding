@@ -43,7 +43,7 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
   const auto train_path = config.get<string>("Corpus.train_path");
   const auto vocab_size = config.get<unsigned>("Train.vocab_size");
   const auto emb_size = config.get<unsigned>("Train.emb_size");
-  const auto context_size = config.get<unsigned>("Train.context_size");
+  const auto window_size = config.get<unsigned>("Train.window_size");
   const auto max_sense_num = config.get<unsigned>("Train.max_sense_num");
   const auto max_iter_num = config.get<unsigned>("Train.max_iter");
   const auto sampling = config.get<float>("Train.sampling");
@@ -65,6 +65,11 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
           auto ids = SplitStringToIds(vocab, line, sampling);
           if (ids.empty()) { continue; }
           for (unsigned i = 0; i < ids.size(); ++i) {
+            random_device seed_gen;
+            mt19937 engine(seed_gen());
+            uniform_int_distribution<unsigned> dist(0, window_size / 2);
+            auto context_size = 2 * dist(engine) + 1;
+
             auto now_id = ids[i];
             auto context_emb = GetContextEmbedding(ids, i, context_size,
                                  emb_size);
