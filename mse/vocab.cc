@@ -3,6 +3,7 @@
 #include <iostream>
 #include <map>
 
+#include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -18,7 +19,7 @@ namespace fs = boost::filesystem;
 namespace pt = boost::property_tree;
 
 Vocab::Vocab(const string & corpus_path, const unsigned size,
-         shared_ptr<RawtextSplitter> text_splitter)
+         boost::shared_ptr<RawtextSplitter> text_splitter)
 : text_splitter_(text_splitter) {
   map<string, unsigned> frequency;
   unsigned num_lines = 0;
