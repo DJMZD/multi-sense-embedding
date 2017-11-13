@@ -49,7 +49,7 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
   const auto sampling = config.get<float>("Train.sampling");
   const auto alpha = config.get<float>("Train.alpha");
   const auto gamma = config.get<float>("Train.gamma");
-  const auto is_fase_mode = config.get<bool>("Train.fast_mode");
+  const auto is_fast_mode = config.get<bool>("Train.fast_mode");
   for (unsigned i = 0; i < max_iter_num; ++i) {
     cerr << "Iter " << i << endl;
     const fs::path path(train_path);
