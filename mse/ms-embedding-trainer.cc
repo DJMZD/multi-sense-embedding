@@ -91,10 +91,10 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
   }
 }
 
-vector<unsigned> MSEmbeddingTrainer::SplitStringToIds(const Vocab & vocab,
+vector<int> MSEmbeddingTrainer::SplitStringToIds(const Vocab & vocab,
                                        const string & line,
                                        const float sampling) {
-  vector<unsigned> ids;
+  vector<int> ids;
   // for empty line, header and footer
   if (line.empty() || line.find("<doc") == 0 || line.find("</doc") == 0) {
     return ids;
@@ -121,7 +121,7 @@ vector<unsigned> MSEmbeddingTrainer::SplitStringToIds(const Vocab & vocab,
   return ids;
 }
 
-VectorXf MSEmbeddingTrainer::GetContextEmbedding(const vector<unsigned> & ids,
+VectorXf MSEmbeddingTrainer::GetContextEmbedding(const vector<int> & ids,
                                const unsigned i, const unsigned context_size,
                                const unsigned emb_size) {
   VectorXf context_emb = VectorXf::Zero(emb_size);
@@ -137,7 +137,7 @@ VectorXf MSEmbeddingTrainer::GetContextEmbedding(const vector<unsigned> & ids,
   return context_emb;
 }
 
-unsigned MSEmbeddingTrainer::SampleSense(const unsigned w_id, float gamma,
+int MSEmbeddingTrainer::SampleSense(const int w_id, float gamma,
                                const VectorXf & context_emb,
                                const unsigned max_sense_num) {
   auto & now_embs = sense_embeddings_[w_id];
@@ -164,7 +164,7 @@ unsigned MSEmbeddingTrainer::SampleSense(const unsigned w_id, float gamma,
   uniform_real_distribution<float> dist(0, probablities.back());
   auto ran = dist(engine);
 
-  unsigned sense = 0;
+  int sense = 0;
   while (sense < probablities.size()) {
     if (ran <= probablities[sense++]) { break; }
   }

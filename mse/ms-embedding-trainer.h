@@ -18,12 +18,12 @@ public:
   ~MSEmbeddingTrainer() {};
   void Train(const Vocab & vocab, const boost::property_tree::ptree & config);
 private:
-  std::vector<unsigned> SplitStringToIds(const Vocab & vocab,
+  std::vector<int> SplitStringToIds(const Vocab & vocab,
                           const std::string & line, const float sampling);
-  Eigen::VectorXf GetContextEmbedding(const std::vector<unsigned> & ids,
+  Eigen::VectorXf GetContextEmbedding(const std::vector<int> & ids,
                     const unsigned i, const unsigned context_size,
                     const unsigned emb_size);
-  unsigned SampleSense(const unsigned w_id, float gamma,
+  int SampleSense(const int w_id, float gamma,
              const Eigen::VectorXf & context_emb, const unsigned max_sense_num);
   std::vector<float> sigmoid_table_;
   Eigen::MatrixXf global_embeddings_;
