@@ -26,6 +26,7 @@ private:
                     const unsigned emb_size, bool & is_empty);
   int SampleSense(const int w_id, float gamma,
              const Eigen::VectorXf & context_emb, const unsigned max_sense_num);
+  float CalculateSigmoid(float x);
   std::vector<float> sigmoid_table_;
   std::vector<unsigned> unigram_table_;
   Eigen::MatrixXf global_embeddings_;

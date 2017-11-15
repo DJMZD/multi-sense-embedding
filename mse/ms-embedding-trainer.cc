@@ -192,16 +192,7 @@ int MSEmbeddingTrainer::SampleSense(const int w_id, float gamma,
     const auto & now_emb = now_embs[i];
     const auto & now_cn = now_cns[i];
     float sim = context_emb.dot(now_emb);
-    // TODO: normal mode
-    if (sim > float(exp_table_max_)) {
-      probablities[i] = 1;
-    } else if (sim < -float(exp_table_max_)) {
-      probablities[i] = 0;
-    } else {
-      auto table_index = int((sim + exp_table_max_) * exp_table_size_
-                             / (2 * exp_table_max_));
-      probablities[i] = now_cn * sigmoid_table_[table_index];
-    }
+    probablities[i] = now_cn * CalculateSigmoid(sim);
     if (i) { probablities[i] += probablities[i - i]; }
   }
   if (now_cns.size() < max_sense_num) {
@@ -219,4 +210,16 @@ int MSEmbeddingTrainer::SampleSense(const int w_id, float gamma,
     if (ran <= probablities[sense++]) { break; }
   }
   return sense - 1;
+}
+
+float MSEmbeddingTrainer::CalculateSigmoid(float x) {
+  if (x > float(exp_table_max_)) {
+    return 1;
+  } else if (x < -float(exp_table_max_)) {
+    return 0;
+  } else {
+    auto table_index = int((x + exp_table_max_) * exp_table_size_
+                           / (2 * exp_table_max_));
+    return sigmoid_table_[table_index];
+  }
 }
