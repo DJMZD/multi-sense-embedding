@@ -21,21 +21,41 @@ namespace ari = boost::algorithm;
 namespace fs = boost::filesystem;
 namespace pt = boost::property_tree;
 
-MSEmbeddingTrainer::MSEmbeddingTrainer(const pt::ptree & config) {
-  // Calculate sigmoid value beforehand
-  // sigmoid(x)
-  //   = sigmoid_table_[int((x + kTableMmax) * kTableSize / (2 * kTableMmax))]
-  if (config.get<unsigned>("Train.fast_mode")) {
-    table_size_ = 1000;
-    table_max_ = 6;
-    for (unsigned i = 0; i < table_size_; ++i) {
-      auto exp_x = exp((float(i) / table_size_ * 2 - 1) * table_max_);
-      sigmoid_table_.push_back(exp_x / (exp_x + 1));
-    }
-  }
+MSEmbeddingTrainer::MSEmbeddingTrainer(const Vocab & vocab, const pt::ptree & config) {
   const auto vocab_size = config.get<unsigned>("Train.vocab_size");
   const auto emb_size = config.get<unsigned>("Train.emb_size");
   const auto scale = config.get<float>("Train.scale");
+  const auto power = config.get<float>("Word2vec.power");
+  // Calculate sigmoid value beforehand
+  // sigmoid(x)
+  //   = sigmoid_table_[int((x + kTableMmax) * kTableSize / (2 * kTableMmax))]
+  sigmoid_table_.resize(exp_table_size_);
+  if (config.get<unsigned>("Train.fast_mode")) {
+    exp_table_size_ = 1000;
+    exp_table_max_ = 6;
+    for (unsigned i = 0; i < exp_table_size_; ++i) {
+      auto exp_x = exp((float(i) / exp_table_size_ * 2 - 1) * exp_table_max_);
+      sigmoid_table_[i] = exp_x / (exp_x + 1);
+    }
+  }
+  // unigram table for negative sampling
+  unigram_table_.resize(unigram_table_size_);
+  double unigram_pow_sum = 0;
+  for (unsigned i = 0; i < vocab.size(); ++i) {
+    unigram_pow_sum += pow(vocab.frequency(i), power);
+  }
+  unsigned p = 0;
+  auto ratio = pow(vocab.frequency(p), power) / unigram_pow_sum;
+  for (unsigned i = 0; i < unigram_table_size_; ++i) {
+    if (double(i) / unigram_table_size_ > ratio) {
+      ratio += pow(vocab.frequency(++p), power) / unigram_pow_sum;
+    }
+    if (p > vocab.size()) {
+      p = vocab.size() - 1;
+    }
+    unigram_table_[i] = p;
+  }
+
   global_embeddings_ = MatrixXf::Random(vocab_size, emb_size) * scale;
 }
 
@@ -173,12 +193,13 @@ int MSEmbeddingTrainer::SampleSense(const int w_id, float gamma,
     const auto & now_cn = now_cns[i];
     float sim = context_emb.dot(now_emb);
     // TODO: normal mode
-    if (sim > float(table_max_)) {
+    if (sim > float(exp_table_max_)) {
       probablities[i] = 1;
-    } else if (sim < -float(table_max_)) {
+    } else if (sim < -float(exp_table_max_)) {
       probablities[i] = 0;
     } else {
-      auto table_index = int((sim + table_max_) * table_size_ / (2 * table_max_));
+      auto table_index = int((sim + exp_table_max_) * exp_table_size_
+                             / (2 * exp_table_max_));
       probablities[i] = now_cn * sigmoid_table_[table_index];
     }
     if (i) { probablities[i] += probablities[i - i]; }
