@@ -21,16 +21,20 @@ public:
 private:
   std::vector<int> SplitStringToIds(const Vocab & vocab,
                           const std::string & line, const float sampling);
-  Eigen::VectorXf GetContextEmbedding(const std::vector<int> & ids,
+  Eigen::VectorXf GetContextEmbedding(const std::vector<unsigned> & ids,
                     const unsigned i, const unsigned context_size,
                     const unsigned emb_size, bool & is_empty);
   int SampleSense(const int w_id, float gamma,
-             const Eigen::VectorXf & context_emb, const unsigned max_sense_num);
+        const Eigen::VectorXf & context_emb, const unsigned max_sense_num);
+  void UpdateParameters(const std::vector<unsigned> & ids, const unsigned idx,
+         const unsigned context_size, Eigen::VectorXf & now_sense_emb,
+         const float alpha, const unsigned neg_sample_count);
   float CalculateSigmoid(float x);
   std::vector<float> sigmoid_table_;
   std::vector<unsigned> unigram_table_;
   Eigen::MatrixXf global_embeddings_;
   std::map<unsigned, std::vector<Eigen::VectorXf>> sense_embeddings_;
+  std::map<unsigned, std::vector<Eigen::VectorXf>> sense_contexts_;
   std::map<unsigned, std::vector<unsigned>> sense_counts_;
   // for fast mode
   unsigned exp_table_size_ = 1000;
