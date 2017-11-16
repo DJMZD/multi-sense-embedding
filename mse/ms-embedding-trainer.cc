@@ -70,48 +70,67 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
   const auto alpha = config.get<float>("Train.alpha");
   const auto gamma = config.get<float>("Train.gamma");
   const auto is_fast_mode = config.get<bool>("Train.fast_mode");
+  const auto neg_sample_count = config.get<unsigned>("Word2vec.neg_sample_count");
   for (unsigned i = 0; i < max_iter_num; ++i) {
     cerr << "Iter " << i << endl;
     const fs::path path(train_path);
     using recur_it = fs::recursive_directory_iterator;
     for (const auto & p: boost::make_iterator_range(recur_it(path), {})) {
       if (fs::is_directory(p)) {
-        cout << p << endl;
+        cerr << p << endl;
       } else {
-        vector<int> word_senses;
         ifstream ifs(p.path().string());
         string line;
         while (getline(ifs, line)) {
-          auto ids = SplitStringToIds(vocab, line, sampling);
+          vector<int> word_senses;
+          auto raw_ids = SplitStringToIds(vocab, line, sampling);
+          vector<unsigned> ids;
+          for (unsigned i = 0; i < raw_ids.size(); ++i) {
+            if (raw_ids[i] != -1) {
+              assert(raw_ids[i] >= 0);
+              ids.push_back(raw_ids[i]);
+            }
+          }
           // Check whether all of the words are filtered
-          if (count(ids.begin(), ids.end(), -1) == ids.size()) { continue; }
-          for (unsigned i = 0; i < ids.size(); ++i) {
+          if (ids.empty()) { continue; }
+          unsigned idx = 0;  // for ids
+          for (unsigned i = 0; i < raw_ids.size(); ++i) {
+            if (raw_ids[i] == -1) {
+              word_senses.push_back(-1);
+              continue;
+            }
+            assert(raw_ids[i] == ids[idx]);
             random_device seed_gen;
             mt19937 engine(seed_gen());
             uniform_int_distribution<unsigned> dist(0, window_size / 2);
             auto context_size = 2 * dist(engine) + 1;
-
-            auto now_id = ids[i];
             bool is_empty = false;
-            auto context_emb = GetContextEmbedding(ids, i, context_size,
+            auto context_emb = GetContextEmbedding(ids, idx, context_size,
                                  emb_size, is_empty);
             if (is_empty) {
               word_senses.push_back(-1);
+              ++idx;
               continue;
             }
+            const auto now_id = ids[idx];
             auto & now_embs = sense_embeddings_[now_id];
             auto & now_cns = sense_counts_[now_id];
-            auto sense = SampleSense(now_id, gamma, context_emb, max_sense_num);
+            auto & now_conts = sense_contexts_[now_id];
+            const auto sense = SampleSense(now_id, gamma, context_emb, max_sense_num);
+            word_senses.push_back(sense);
             if (sense >= now_embs.size()) {
-              now_embs.push_back(context_emb);
+              // new sense
+              now_embs.push_back(global_embeddings_.row(now_id));
               now_cns.push_back(1);
-              word_senses.push_back(sense);
+              now_conts.push_back(context_emb);
             } else {
-              now_embs[sense] += context_emb * alpha;
+              now_conts[sense] += context_emb * alpha;
               ++now_cns[sense];
-              word_senses.push_back(sense);
             }
+            UpdateParameters(ids, idx, context_size, now_embs[sense], alpha, neg_sample_count);
+            ++idx;
           }
+
         }
       }
     }
@@ -148,34 +167,28 @@ vector<int> MSEmbeddingTrainer::SplitStringToIds(const Vocab & vocab,
   return ids;
 }
 
-VectorXf MSEmbeddingTrainer::GetContextEmbedding(const vector<int> & ids,
-                               const unsigned i, const unsigned context_size,
+VectorXf MSEmbeddingTrainer::GetContextEmbedding(const vector<unsigned> & ids,
+                               const unsigned idx, const unsigned context_size,
                                const unsigned emb_size, bool & is_empty) {
   VectorXf context_emb = VectorXf::Zero(emb_size);
   unsigned l_pos = 0;
-  unsigned r_pos = ids.size();
+  unsigned r_pos = ids.size() - 1;
+  if (idx > context_size / 2) {
+    l_pos = idx - context_size / 2;
+  }
+  if (idx + context_size / 2 < ids.size()) {
+    r_pos = idx + context_size / 2;
+  }
 
-  unsigned l_word_count = 0;
-  for (int pos = i - 1; pos >= 0; --pos) {
-    if (ids[pos] != -1) {
-      context_emb += global_embeddings_.row(ids[pos]);
-      ++l_word_count;
-    }
-    if (l_word_count >= context_size / 2) { break; }
+  for (int pos = l_pos; pos <= l_pos; ++pos) {
+    context_emb += global_embeddings_.row(ids[pos]);
   }
-  unsigned r_word_count = 0;
-  for (unsigned pos = i + 1; pos < ids.size(); ++pos) {
-    if (ids[pos] != -1) {
-      context_emb += global_embeddings_.row(ids[pos]);
-      ++r_word_count;
-    }
-    if (r_word_count >= context_size / 2) { break; }
-  }
-  if (l_word_count + r_word_count == 0) {
+
+  if (l_pos == r_pos) {
     is_empty = true;
-    return context_emb;
+  } else {
+    context_emb = context_emb / (r_pos - l_pos + 1);
   }
-  context_emb = context_emb / (l_word_count + r_word_count);
 
   return context_emb;
 }
@@ -183,15 +196,17 @@ VectorXf MSEmbeddingTrainer::GetContextEmbedding(const vector<int> & ids,
 int MSEmbeddingTrainer::SampleSense(const int w_id, float gamma,
                                const VectorXf & context_emb,
                                const unsigned max_sense_num) {
-  auto & now_embs = sense_embeddings_[w_id];
-  auto & now_cns = sense_counts_[w_id];
+  const auto & now_embs = sense_embeddings_[w_id];
+  const auto & now_conts = sense_contexts_[w_id];
+  const auto & now_cns = sense_counts_[w_id];
   if (now_embs.empty()) { return 0; }
 
   vector<float> probablities(now_embs.size());
   for (unsigned i = 0; i < probablities.size(); ++i) {
     const auto & now_emb = now_embs[i];
+    const auto & now_cont = now_conts[i];
     const auto & now_cn = now_cns[i];
-    float sim = context_emb.dot(now_emb);
+    float sim = context_emb.dot(now_cont);
     probablities[i] = now_cn * CalculateSigmoid(sim);
     if (i) { probablities[i] += probablities[i - i]; }
   }
@@ -210,6 +225,44 @@ int MSEmbeddingTrainer::SampleSense(const int w_id, float gamma,
     if (ran <= probablities[sense++]) { break; }
   }
   return sense - 1;
+}
+
+// skip-gram && negative sampling
+void MSEmbeddingTrainer::UpdateParameters(const vector<unsigned> & ids,
+                           const unsigned idx, const unsigned context_size,
+                           VectorXf & now_sense_emb, const float alpha,
+                           const unsigned neg_sample_count) {
+  assert(idx != 0x3F3F3F);
+  unsigned l_pos = 0;
+  unsigned r_pos = ids.size() - 1;
+  if (idx > context_size / 2) {
+    l_pos = idx - context_size / 2;
+  }
+  if (idx + context_size / 2 < ids.size()) {
+    r_pos = idx + context_size / 2;
+  }
+  for (unsigned i = l_pos; i <= r_pos; ++i) {
+    auto w_id = ids[i];
+    auto neu1e = VectorXf::Zero(now_sense_emb.size());
+    unsigned j = 0;
+    for (j = 0; j < neg_sample_count + 1; j++) {
+      unsigned neg_id = w_id;
+      unsigned label = 1;
+      if (j) {
+        random_device seed_gen;
+        mt19937 engine(seed_gen());
+        uniform_int_distribution<unsigned> dist(0, unigram_table_size_);
+        neg_id = unigram_table_[dist(engine)];
+        label = 0;
+      }
+      if ((neg_id == w_id) && (label == 0)) { continue; }
+      auto f = now_sense_emb.dot(global_embeddings_.row(w_id));
+      auto g = (label - CalculateSigmoid(f)) * alpha;
+      //neu1e += global_embeddings_.row(w_id) * g;
+      global_embeddings_.row(w_id) += now_sense_emb * g;
+    }
+    now_sense_emb += neu1e;
+  }
 }
 
 float MSEmbeddingTrainer::CalculateSigmoid(float x) {
