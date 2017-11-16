@@ -61,6 +61,7 @@ MSEmbeddingTrainer::MSEmbeddingTrainer(const Vocab & vocab, const pt::ptree & co
 
 void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
   const auto train_path = config.get<string>("Corpus.train_path");
+  const auto save_path = config.get<string>("Train.save_path");
   const auto vocab_size = config.get<unsigned>("Train.vocab_size");
   const auto emb_size = config.get<unsigned>("Train.emb_size");
   const auto window_size = config.get<unsigned>("Train.window_size");
@@ -77,9 +78,11 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
     using recur_it = fs::recursive_directory_iterator;
     for (const auto & p: boost::make_iterator_range(recur_it(path), {})) {
       if (fs::is_directory(p)) {
-        cerr << p << endl;
+        cerr << p.path().string() << endl;
       } else {
+        auto file_name = p.path().leaf().string();
         ifstream ifs(p.path().string());
+        ofstream ofs(save_path + file_name);
         string line;
         while (getline(ifs, line)) {
           vector<int> word_senses;
@@ -130,7 +133,10 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
             UpdateParameters(ids, idx, context_size, now_embs[sense], alpha, neg_sample_count);
             ++idx;
           }
-
+          for (auto & e: word_senses) {
+            ofs << e << " ";
+          }
+          ofs << endl;
         }
       }
     }
