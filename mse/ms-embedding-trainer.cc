@@ -72,8 +72,8 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
   const auto gamma = config.get<float>("Train.gamma");
   const auto is_fast_mode = config.get<bool>("Train.fast_mode");
   const auto neg_sample_count = config.get<unsigned>("Word2vec.neg_sample_count");
-  for (unsigned i = 0; i < max_iter_num; ++i) {
-    cerr << "Iter " << i << endl;
+  for (unsigned iter = 0; iter < max_iter_num; ++iter) {
+    cerr << "Iter " << iter << endl;
     const fs::path path(train_path);
     using recur_it = fs::recursive_directory_iterator;
     for (const auto & p: boost::make_iterator_range(recur_it(path), {})) {
@@ -82,7 +82,7 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
       } else {
         auto file_name = p.path().leaf().string();
         ifstream ifs(p.path().string());
-        ofstream ofs(save_path + file_name);
+        ofstream ofs(save_path + file_name + "_sense_" + to_string(iter));
         string line;
         while (getline(ifs, line)) {
           vector<int> word_senses;
