@@ -159,7 +159,7 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
             const auto now_id = ids[idx];
             auto & now_embs = sense_embeddings_[now_id];
             auto & now_cns = sense_counts_[now_id];
-            auto & now_conts = sense_contexts_[now_id];
+            auto & now_ctxs = sense_contexts_[now_id];
             if (iter > 0 && prev_senses[i] != -1) {
               --now_cns[prev_senses[i]];
             }
@@ -169,9 +169,9 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
               // new sense
               now_embs.push_back(global_embeddings_.row(now_id));
               now_cns.push_back(1);
-              now_conts.push_back(context_emb);
+              now_ctxs.push_back(context_emb);
             } else {
-              now_conts[sense] += context_emb * alpha;
+              now_ctxs[sense] += context_emb * alpha;
               ++now_cns[sense];
             }
             UpdateParameters(ids, idx, context_size, now_embs[sense], alpha, neg_sample_count);
@@ -264,16 +264,16 @@ int MSEmbeddingTrainer::SampleSense(const int w_id, float gamma,
                                const VectorXf & context_emb,
                                const unsigned max_sense_num) {
   const auto & now_embs = sense_embeddings_[w_id];
-  const auto & now_conts = sense_contexts_[w_id];
+  const auto & now_ctxs = sense_contexts_[w_id];
   const auto & now_cns = sense_counts_[w_id];
   if (now_embs.empty()) { return 0; }
 
   vector<float> probablities(now_embs.size());
   for (unsigned i = 0; i < probablities.size(); ++i) {
     const auto & now_emb = now_embs[i];
-    const auto & now_cont = now_conts[i];
+    const auto & now_ctx = now_ctxs[i];
     const auto & now_cn = now_cns[i];
-    float sim = context_emb.dot(now_cont);
+    float sim = context_emb.dot(now_ctx);
     probablities[i] = now_cn * Sigmoid(sim);
     if (i) { probablities[i] += probablities[i - i]; }
   }
