@@ -26,7 +26,7 @@ MSEmbeddingTrainer::MSEmbeddingTrainer(const Vocab & vocab, const pt::ptree & co
   const auto emb_size = config.get<unsigned>("Train.emb_size");
   const auto scale = config.get<float>("Train.scale");
   const auto power = config.get<float>("Word2vec.power");
-  // Calculate sigmoid value beforehand
+  //  sigmoid value beforehand
   // sigmoid(x)
   //   = sigmoid_table_[int((x + kTableMmax) * kTableSize / (2 * kTableMmax))]
   sigmoid_table_.resize(exp_table_size_);
@@ -246,7 +246,7 @@ int MSEmbeddingTrainer::SampleSense(const int w_id, float gamma,
     const auto & now_cont = now_conts[i];
     const auto & now_cn = now_cns[i];
     float sim = context_emb.dot(now_cont);
-    probablities[i] = now_cn * CalculateSigmoid(sim);
+    probablities[i] = now_cn * Sigmoid(sim);
     if (i) { probablities[i] += probablities[i - i]; }
   }
   if (now_cns.size() < max_sense_num) {
@@ -296,7 +296,7 @@ void MSEmbeddingTrainer::UpdateParameters(const vector<unsigned> & ids,
       }
       if ((neg_id == w_id) && (label == 0)) { continue; }
       auto f = now_sense_emb.dot(global_embeddings_.row(w_id));
-      auto g = (label - CalculateSigmoid(f)) * alpha;
+      auto g = (label - Sigmoid(f)) * alpha;
       //neu1e += global_embeddings_.row(w_id) * g;
       global_embeddings_.row(w_id) += now_sense_emb * g;
     }
@@ -304,7 +304,7 @@ void MSEmbeddingTrainer::UpdateParameters(const vector<unsigned> & ids,
   }
 }
 
-float MSEmbeddingTrainer::CalculateSigmoid(float x) {
+float MSEmbeddingTrainer::Sigmoid(float x) {
   if (x > float(exp_table_max_)) {
     return 1;
   } else if (x < -float(exp_table_max_)) {

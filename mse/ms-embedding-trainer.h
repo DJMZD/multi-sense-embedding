@@ -30,7 +30,7 @@ private:
   void UpdateParameters(const std::vector<unsigned> & ids, const unsigned idx,
          const unsigned context_size, Eigen::VectorXf & now_sense_emb,
          const float alpha, const unsigned neg_sample_count);
-  float CalculateSigmoid(float x);
+  float Sigmoid(float x);
   std::vector<float> sigmoid_table_;
   std::vector<unsigned> unigram_table_;
   Eigen::MatrixXf global_embeddings_;
