@@ -20,6 +20,7 @@ public:
   void Train(const Vocab & vocab, const boost::property_tree::ptree & config);
 private:
   unsigned long GetSentenceNum(const std::string & dir);
+  void SaveEmbedding(const std::string & file_name, const Vocab & vocab, const unsigned iter);
   std::vector<std::vector<int>> LoadPreviousSense(const std::string & file_name);
   std::vector<int> SplitStringToIds(const Vocab & vocab,
                           const std::string & line, const float sampling);

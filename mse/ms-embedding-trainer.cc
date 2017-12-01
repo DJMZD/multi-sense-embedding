@@ -106,7 +106,7 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
       } else {
         auto file_name = p.path().leaf().string();
         ifstream ifs(p.path().string());
-        ofstream ofs(save_path + file_name + "_sense_" + to_string(iter));
+        ofstream ofs(save_path + "sense/" + file_name + "_sense_" + to_string(iter));
         vector<vector<int>> prev_senses_all;
         if (iter > 0) {
           prev_senses_all = LoadPreviousSense(
@@ -183,6 +183,26 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
           ofs << endl;
         }
       }
+    }
+    SaveEmbedding(save_path, vocab, iter);
+  }
+}
+
+void MSEmbeddingTrainer::SaveEmbedding(const string & save_path,
+                           const Vocab & vocab,
+                           const unsigned iter) {
+  cerr << "Saving model...\n";
+  ofstream ofs_emb(save_path + "_embedding_" + to_string(iter));
+  ofstream ofs_ctx(save_path + "_context_" + to_string(iter));
+  for (unsigned i = 0; i < vocab.size(); ++i) {
+    ofs_emb << vocab.word(i) << " " << sense_counts_[i].size() << endl;
+    ofs_ctx << vocab.word(i) << " " << sense_counts_[i].size() << endl;
+    auto count_sum = accumulate(sense_counts_[i].begin(), sense_counts_[i].end(), 0);
+    for (unsigned j = 0; j < sense_counts_[i].size(); ++j) {
+      ofs_emb << float(sense_counts_[i][j]) / count_sum << " ";
+      ofs_emb << sense_embeddings_[i][j].transpose() << endl;
+      ofs_ctx << float(sense_counts_[i][j]) / count_sum << " ";
+      ofs_ctx << sense_contexts_[i][j].transpose() << endl;
     }
   }
 }
