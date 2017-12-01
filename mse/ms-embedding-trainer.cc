@@ -83,9 +83,18 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
         auto file_name = p.path().leaf().string();
         ifstream ifs(p.path().string());
         ofstream ofs(save_path + file_name + "_sense_" + to_string(iter));
+        vector<vector<int>> prev_senses_all;
+        if (iter > 0) {
+          prev_senses_all = LoadPreviousSense(
+            save_path + file_name + "_sense_" + to_string(iter - 1)
+          );
+        }
         string line;
+        unsigned line_count = 0;
         while (getline(ifs, line)) {
           vector<int> word_senses;
+          vector<int> prev_senses;
+
           auto raw_ids = SplitStringToIds(vocab, line, sampling);
           vector<unsigned> ids;
           for (unsigned i = 0; i < raw_ids.size(); ++i) {
@@ -94,8 +103,12 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
               ids.push_back(raw_ids[i]);
             }
           }
-          // Check whether all of the words are filtered
+          // Check whether all of the words are filtered, or empty line
           if (ids.empty()) { continue; }
+
+          if (iter > 0) {
+            prev_senses = prev_senses_all[line_count++];
+          }
           unsigned idx = 0;  // for ids
           for (unsigned i = 0; i < raw_ids.size(); ++i) {
             if (raw_ids[i] == -1) {
@@ -119,6 +132,9 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
             auto & now_embs = sense_embeddings_[now_id];
             auto & now_cns = sense_counts_[now_id];
             auto & now_conts = sense_contexts_[now_id];
+            if (iter > 0 && prev_senses[i] != -1) {
+              --now_cns[prev_senses[i]];
+            }
             const auto sense = SampleSense(now_id, gamma, context_emb, max_sense_num);
             word_senses.push_back(sense);
             if (sense >= now_embs.size()) {
@@ -141,6 +157,23 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
       }
     }
   }
+}
+
+vector<vector<int>> MSEmbeddingTrainer::LoadPreviousSense(const string & file_name) {
+  ifstream ifs(file_name);
+  vector<vector<int>> senses_all;
+  string line;
+  while (getline(ifs, line)) {
+    vector<int> senses_single;
+    stringstream ss(line);
+    while (ss) {
+      int sense;
+      ss >> sense;
+      senses_single.push_back(sense);
+    }
+    senses_all.push_back(senses_single);
+  }
+  return senses_all;
 }
 
 vector<int> MSEmbeddingTrainer::SplitStringToIds(const Vocab & vocab,
