@@ -59,6 +59,27 @@ MSEmbeddingTrainer::MSEmbeddingTrainer(const Vocab & vocab, const pt::ptree & co
   global_embeddings_ = MatrixXf::Random(vocab_size, emb_size) * scale;
 }
 
+unsigned long MSEmbeddingTrainer::GetSentenceNum(const string & dir) {
+  unsigned long num_sentences = 0;
+  const fs::path path(dir);
+  using recur_it = fs::recursive_directory_iterator;
+  for (const auto & p: boost::make_iterator_range(recur_it(path), {})) {
+    if (!fs::is_directory(p)) {
+      auto file_name = p.path().leaf().string();
+      if (file_name[0] == '.') { continue; }
+
+      ifstream ifs(p.path().string());
+      string line;
+      while (getline(ifs, line)) {
+        if (!line.empty() && line.find("<doc") != 0 && line.find("</doc") != 0) {
+          ++num_sentences;
+        }
+      }
+    }
+  }
+  return num_sentences;
+}
+
 void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
   const auto train_path = config.get<string>("Corpus.train_path");
   const auto save_path = config.get<string>("Train.save_path");
@@ -68,11 +89,14 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
   const auto max_sense_num = config.get<unsigned>("Train.max_sense_num");
   const auto max_iter_num = config.get<unsigned>("Train.max_iter");
   const auto sampling = config.get<float>("Train.sampling");
-  const auto alpha = config.get<float>("Train.alpha");
+  const auto starting_alpha = config.get<float>("Train.alpha");
   const auto gamma = config.get<float>("Train.gamma");
   const auto is_fast_mode = config.get<bool>("Train.fast_mode");
   const auto neg_sample_count = config.get<unsigned>("Word2vec.neg_sample_count");
+
+  auto num_sentences = GetSentenceNum(train_path);
   for (unsigned iter = 0; iter < max_iter_num; ++iter) {
+    unsigned long line_count_total = 0;
     cerr << "Iter " << iter << endl;
     const fs::path path(train_path);
     using recur_it = fs::recursive_directory_iterator;
@@ -90,8 +114,12 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
           );
         }
         string line;
-        unsigned line_count = 0;
+        unsigned line_count_file = 0;
         while (getline(ifs, line)) {
+          auto rate = (1 - float(line_count_total++) / (max_iter_num * num_sentences + 1));
+          rate = max(rate, 0.0001f);
+          auto alpha = starting_alpha * rate;
+
           vector<int> word_senses;
           vector<int> prev_senses;
 
@@ -107,7 +135,7 @@ void MSEmbeddingTrainer::Train(const Vocab & vocab, const pt::ptree & config) {
           if (ids.empty()) { continue; }
 
           if (iter > 0) {
-            prev_senses = prev_senses_all[line_count++];
+            prev_senses = prev_senses_all[line_count_file++];
           }
           unsigned idx = 0;  // for ids
           for (unsigned i = 0; i < raw_ids.size(); ++i) {
